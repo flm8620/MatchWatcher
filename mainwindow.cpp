@@ -26,6 +26,7 @@ void MainWindow::ApplyScene() {
 MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent) {
     setupUi(this);
     connect(this->image_list, &QTableWidget::currentCellChanged, this, &MainWindow::WhenImageSelected);
+    connect(this->image_match_list, &QTableWidget::currentCellChanged, this, &MainWindow::WhenMatchedImageSelected);
 }
 
 void MainWindow::on_actionOpen_triggered() {
@@ -37,20 +38,18 @@ void MainWindow::on_actionOpen_triggered() {
     last_file_name = file_name;
 
 
-    std::vector<AbstractFeature> features;
-    features.push_back({ {0.,0.}, 1.,0.,0. });
-    features.push_back({ {100.,0.}, 1.,0.,0. });
-    features.push_back({ {100.,100.}, 1.,0.,0. });
-    features.push_back({ {200.,100.}, 1.,0.,0. });
+    std::map<int, AbstractFeature> features;
+    features[0] = { {0.,0.}, 1.,0.,0. };
+    features[1] = { {100.,0.}, 1.,0.,0. };
+    features[2] = { {100.,100.}, 1.,0.,0. };
+    features[3] = { {200.,100.}, 1.,0.,0. };
     this->image_holder->LoadImageLeft(file_name, features);
     this->image_holder->LoadImageRight(file_name, features);
 
 
-    std::vector<std::pair<int, int>> matches;
-    matches.emplace_back(0, 0);
-    matches.emplace_back(0, 1);
-    matches.emplace_back(1, 1);
-    matches.emplace_back(2, 2);
+    std::map<int, int> matches;
+    matches[0] = 0;
+    matches[1] = 1;
     this->image_holder->SetMatches(matches);
 }
 
@@ -111,11 +110,11 @@ void MainWindow::on_actionOpen_VisualSFM_mat_triggered() {
 }
 
 void MainWindow::WhenImageSelected(int r, int c) {
-    auto item = this->image_list->item(r, 0);
+    const auto item = this->image_list->item(r, 0);
     bool ok;
-    int img_id = item->text().toInt(&ok);
+    const int img_id = item->text().toInt(&ok);
     if (!ok) return;
-    
+
     const std::map<int, std::string>& index_to_image_file = scene.IndexToImageFile();
     const std::map<int, std::map<int, QPointF>>& image_to_features = scene.ImageToFeatures();
     const std::map<int, std::vector<std::pair<int, int>>>& image_matches = scene.Image1Image2Matches().at(img_id);
@@ -132,4 +131,42 @@ void MainWindow::WhenImageSelected(int r, int c) {
         row++;
     }
     this->image_match_list->resizeColumnsToContents();
+
+    std::map<int, AbstractFeature> features;
+    for (const auto it : image_to_features.at(r)) {
+        AbstractFeature f;
+        f.pos = it.second;
+        features[it.first] = f;
+    }
+    this->image_holder->LoadImageLeft(QString(index_to_image_file.at(r).c_str()), features);
+}
+
+void MainWindow::WhenMatchedImageSelected(int r, int c) {
+    const int row1 = this->image_list->currentRow();
+    const auto item1 = this->image_match_list->item(row1, 0);
+    const auto item2 = this->image_match_list->item(r, 0);
+    bool ok;
+    const int img2_id = item2->text().toInt(&ok);
+    if (!ok) return;
+    const int img1_id = item1->text().toInt(&ok);
+    if (!ok) return;
+
+
+    const std::map<int, std::string>& index_to_image_file = scene.IndexToImageFile();
+    const std::map<int, std::map<int, QPointF>>& image_to_features = scene.ImageToFeatures();
+    const std::map<int, std::vector<std::pair<int, int>>>& image_matches = scene.Image1Image2Matches().at(img1_id);
+
+
+    std::map<int, AbstractFeature> features;
+    for (const auto it : image_to_features.at(r)) {
+        AbstractFeature f;
+        f.pos = it.second;
+        features[it.first] = f;;
+    }
+    this->image_holder->LoadImageRight(QString(index_to_image_file.at(r).c_str()), features);
+    std::map<int, int> matches;
+    for (auto it : image_matches.at(r)) {
+        matches[it.first] = it.second;
+    }
+    this->image_holder->SetMatches(matches);
 }

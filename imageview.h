@@ -18,7 +18,7 @@ class ImageView : public QGraphicsView
 private:
     QGraphicsScene scene;
     QGraphicsPixmapItem* image_item;
-    std::vector<AbstractFeature> features;
+    std::map<int, AbstractFeature> features;
     const int id;
 protected:
     void wheelEvent(QWheelEvent *) override;
@@ -27,7 +27,6 @@ signals:
 public slots:
     void zoomIn();
     void zoomOut();
-    void invalidateAll();
 public:
     ImageView(QWidget* parent = nullptr, int id = -1) : id(id) {
         this->setScene(&scene);
@@ -38,14 +37,14 @@ public:
 
     void LoadImage(const QString& file);
 
-    void LoadFeatures(const std::vector<AbstractFeature>& features);
+    void LoadFeatures(const std::map<int, AbstractFeature>& features);
 
     void fitViewAllObject();
 
     bool GetFeaturePos(int id, QPointF& pos) {
-        if (id < 0 || id > features.size()) {
+        if (features.find(id) == features.end())
             return false;
-        }
+
         pos = features[id].pos;
         return true;
     }
@@ -60,6 +59,6 @@ public:
 
     void scrollContentsBy(int x, int y) override {
         emit userMoved();
-        this->QGraphicsView::scrollContentsBy(x,y);
+        this->QGraphicsView::scrollContentsBy(x, y);
     }
 };

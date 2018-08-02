@@ -22,11 +22,6 @@ void ImageView::zoomOut() {
     this->setTransform(t);
 }
 
-void ImageView::invalidateAll() {
-    std::cout << id << " invalidate all" << std::endl;
-    this->invalidateScene(this->rect());
-}
-
 void ImageView::LoadImage(const QString& file) {
     QPixmap img(file);
     if (img.isNull()) return;
@@ -36,11 +31,11 @@ void ImageView::LoadImage(const QString& file) {
     this->fitViewAllObject();
 }
 
-void ImageView::LoadFeatures(const std::vector<AbstractFeature>& features) {
+void ImageView::LoadFeatures(const std::map<int, AbstractFeature>& features) {
     this->features = features;
-    for (int i = 0; i < this->features.size(); i++) {
-        const auto& f = this->features[i];
-        auto* marker = new Marker(i);
+    for (auto it : features) {
+        const auto& f = it.second;
+        auto* marker = new Marker(it.first);
         marker->setPos(f.pos);
         this->scene.addItem(marker);
     }
