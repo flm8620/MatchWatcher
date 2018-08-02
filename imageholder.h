@@ -30,7 +30,6 @@ private:
                 p.drawLine(p1 + offset_left, p2 + offset_right);
             }
         }
-        //std::cout << e->rect().x() << " " << e->rect().y() << " " << e->rect().width() << " " << e->rect().height() << std::endl;
     }
 public:
     Line(ImageView * left_view, ImageView * right_view, QWidget* parent = nullptr)

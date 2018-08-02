@@ -33,7 +33,7 @@ void ImageView::LoadImage(const QString& file) {
 
 void ImageView::LoadFeatures(const std::map<int, AbstractFeature>& features) {
     this->features = features;
-    for (auto it : features) {
+    for (const auto it : features) {
         const auto& f = it.second;
         auto* marker = new Marker(it.first);
         marker->setPos(f.pos);

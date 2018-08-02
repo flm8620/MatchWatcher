@@ -2,8 +2,8 @@
 #include <QtWidgets>
 Marker::Marker(int id)
 {
-    setFlags(ItemIsSelectable);
-    setAcceptHoverEvents(true);
+    //setFlags(ItemIsSelectable);
+    //setAcceptHoverEvents(true);
     setZValue(10);
     radius=24.0;
     innerRadius=15.0;
