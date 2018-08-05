@@ -27,11 +27,12 @@
 
 #include <vector>
 #include <string>
-#include <minwindef.h>
+//#include <minwindef.h>
 using std::vector;
 using std::string;
 #include "points.h"
 
+#define MAX_PATH 1024
 
 ////////////////////////////////////////////////////////////////////////
 //+++To read the number of matches of iamge1 and image2------------------------------

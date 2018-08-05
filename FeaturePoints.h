@@ -50,7 +50,7 @@ typedef float LTYPE;
 //#define SIFT_LOCATION_NEW
 
 
-class FeatureData 
+class FeatureData
 {
     typedef struct sift_fileheader_v2
     {
@@ -68,18 +68,18 @@ class FeatureData
     }sift_fileheader_v1;
     enum
     {
-//		READ_BUFFER_SIZE = 0x100000,
-        SIFT_NAME= ('S'+ ('I'<<8)+('F'<<16)+('T'<<24)),
-        MSER_NAME= ('M'+ ('S'<<8)+('E'<<16)+('R'<<24)),
-        RECT_NAME= ('R'+ ('E'<<8)+('C'<<16)+('T'<<24)), 
+        //		READ_BUFFER_SIZE = 0x100000,
+        SIFT_NAME = ('S' + ('I' << 8) + ('F' << 16) + ('T' << 24)),
+        MSER_NAME = ('M' + ('S' << 8) + ('E' << 16) + ('R' << 24)),
+        RECT_NAME = ('R' + ('E' << 8) + ('C' << 16) + ('T' << 24)),
         //SIFT_VERSION_2=('V'+('2'<<8)+('.'<<16)+('0'<<24)),
         //SIFT_VERSION_3=('V'+('3'<<8)+('.'<<16)+('0'<<24)),
-        SIFT_VERSION_4=('V'+('4'<<8)+('.'<<16)+('0'<<24)),
-        SIFT_VERSION_5=('V'+('5'<<8)+('.'<<16)+('0'<<24)),
-        SIFT_EOF = (0xff+('E'<<8)+('O'<<16)+('F'<<24)),
+        SIFT_VERSION_4 = ('V' + ('4' << 8) + ('.' << 16) + ('0' << 24)),
+        SIFT_VERSION_5 = ('V' + ('5' << 8) + ('.' << 16) + ('0' << 24)),
+        SIFT_EOF = (0xff + ('E' << 8) + ('O' << 16) + ('F' << 24)),
     };
-//	static char readBuf[READ_BUFFER_SIZE];
-//	static char sift_version[8];
+    //	static char readBuf[READ_BUFFER_SIZE];
+    //	static char sift_version[8];
     static inline int IsValidFeatureName(int value)
     {
         return value == SIFT_NAME || value == MSER_NAME;
@@ -89,7 +89,7 @@ class FeatureData
         return value == SIFT_VERSION_4 || value == SIFT_VERSION_5;
     }
 public:
-    class LocationData: public Points<LTYPE>
+    class LocationData : public Points<LTYPE>
     {
     public:
         int              _file_version;
@@ -99,8 +99,8 @@ public:
         //for eclips feature, there is u,v,a,b,c +z
     public:
         void glPaint2D(int style);
-        LocationData(int d, int n):Points<LTYPE>(d,n),  _file_version(0){	};
-        LocationData( LocationData& sup, int index[], int n): Points<LTYPE>(sup,index,n), _file_version(0){};
+        LocationData(int d, int n) :Points<LTYPE>(d, n), _file_version(0) {	};
+        LocationData(LocationData& sup, int index[], int n) : Points<LTYPE>(sup, index, n), _file_version(0) {};
         static void glPaintTexSIFT(const float * loc, float td[3]);
         static void glPaintTexFrontalVIP(const float * loc, float td[3]);
         static void glPaintSIFT(const LTYPE* loc);
@@ -110,17 +110,17 @@ public:
         static void SetPaintColor(LTYPE sz);
     };
 
-    class DescriptorData: public Points<DTYPE>
+    class DescriptorData : public Points<DTYPE>
     {
         //generally d is 128
     public:
-        DescriptorData(DescriptorData& sup, int index[], int n): Points<DTYPE>(sup,index,n){};
-        DescriptorData(int d, int n):Points<DTYPE>(d,n){};
+        DescriptorData(DescriptorData& sup, int index[], int n) : Points<DTYPE>(sup, index, n) {};
+        DescriptorData(int d, int n) :Points<DTYPE>(d, n) {};
     };
     static float gSiftDisplayScale;
     static int	 gSiftVisualStyle;
-protected:
-    void ReadFeatureDataA(ifstream & is, int npt,  int locDim, int desDim, int szFeatureName);
+public:
+    void ReadFeatureDataA(ifstream & is, int npt, int locDim, int desDim, int szFeatureName);
     // the set of feature descriptors
     DescriptorData * _desData;
     // the set of feature locations
@@ -128,30 +128,31 @@ protected:
     int              _npoint;
     int				 _updated;
 public:
-    void SetUpdated(){_updated = 1;}
-    int  GetUpdated(){return _updated;}
+    void SetUpdated() { _updated = 1; }
+    int  GetUpdated() { return _updated; }
     void CopyToFeatureData(FeatureData &fd);
-    int  appendSIFTB(const char* szFile,int pos);
-    int  validate()	{		return _locData && _desData;	}
+    int  appendSIFTB(const char* szFile, int pos);
+    int  validate() { return _locData && _desData; }
     void ResizeFeatureData(int npoint, int locDim = 5, int desDim = 128)
     {
-        if(npoint ==0)
+        if (npoint == 0)
         {
-            if(_locData) delete _locData;
-            if(_desData) delete _desData;
+            if (_locData) delete _locData;
+            if (_desData) delete _desData;
             _locData = NULL;
             _desData = NULL;
-        }else
+        }
+        else
         {
-            if(_locData)
+            if (_locData)
                 _locData->resize(locDim, npoint);
             else
                 _locData = new LocationData(locDim, npoint);
-            if(_desData)
+            if (_desData)
                 _desData->resize(desDim, npoint);
             else
                 _desData = new DescriptorData(desDim, npoint);
-            _locData->_file_version  = SIFT_VERSION_4;
+            _locData->_file_version = SIFT_VERSION_4;
         }
         _npoint = npoint;
 
@@ -159,31 +160,32 @@ public:
     void operator = (FeatureData& ref) { ref.CopyToFeatureData(*this); }
     void ResizeLocationData(int npoint, int locDim)
     {
-        if(npoint ==0)
+        if (npoint == 0)
         {
-            if(_locData) delete _locData;
-            if(_desData) delete _desData;
+            if (_locData) delete _locData;
+            if (_desData) delete _desData;
             _locData = NULL;
             _desData = NULL;
-        }else
+        }
+        else
         {
-            if(_locData)
+            if (_locData)
                 _locData->resize(locDim, npoint);
             else
                 _locData = new LocationData(locDim, npoint);
-            if(_desData)
+            if (_desData)
             {
                 delete _desData;
                 _desData = NULL;
             }
-            _locData->_file_version  = SIFT_VERSION_4;	
+            _locData->_file_version = SIFT_VERSION_4;
         }
     }
 
     void ShrinkLocationData(int ndim = 2, int npoint = -1);
     void ReleaseDescriptorData()
     {
-        if(_desData)
+        if (_desData)
         {
             delete _desData;
             _desData = NULL;
@@ -206,24 +208,24 @@ public:
     int  ReadSIFTB_DES(const char* szFile, int fmax);
     static int ReadSIFTB_DES(const char* szFile, unsigned char * buf, int nmax);
     static int ReadSIFTA_DES(const char* szFile, unsigned char * buf, int nmax);
-    static int ReadSIFTB_LOC(const char* szFile, float * buf, int nmax ); 
+    static int ReadSIFTB_LOC(const char* szFile, float * buf, int nmax);
     static int ReadSIFTB(const char* szFile, float * locbuf, unsigned char * desbuf, int nmax);
     void offsetFeatures(int ox, int oy);
     void saveSIFTB2(const char* szFile);
     void saveSIFTA(const char* szFile, const int nDesDim = 128);
     void Overwrite_SIFTLOC(const char* szFile);
-    void CreateFeatureClip(FeatureData& src, int x1, int x2, int y1, int y2, int smax =100000 );
+    void CreateFeatureClip(FeatureData& src, int x1, int x2, int y1, int y2, int smax = 100000);
     void SetFeatureClip(FeatureData&src, int nsf, int index[], int subset = 1);
     void ReleaseFeatureData();
     void FlipLocation(float imheight);
     int ReadSIFTA(const char* szFile);
     FeatureData();
     virtual ~FeatureData();
-    DescriptorData&  getDescriptorData() {return *_desData;}
-    LocationData&   getLocationData()const {return *_locData;}
-    int		IsValidFeatureData(){return getFeatureNum() > 0;}
-    int		getFeatureNum(){return _npoint;}
-    int		getLoadedFeatureNum(){return _locData? _locData->npoint(): 0;}
+    DescriptorData&  getDescriptorData() { return *_desData; }
+    LocationData&   getLocationData()const { return *_locData; }
+    int		IsValidFeatureData() { return getFeatureNum() > 0; }
+    int		getFeatureNum() { return _npoint; }
+    int		getLoadedFeatureNum() { return _locData ? _locData->npoint() : 0; }
 };
 
 

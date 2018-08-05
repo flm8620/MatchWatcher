@@ -19,10 +19,8 @@
 
 
 
-#include "stdio.h"
+#include <cstdio>
 #include <fcntl.h>
-#include <sys/types.h>
-#include <sys/stat.h>
 #include <algorithm>
 #include <iomanip>
 #include <corecrt_io.h>
@@ -33,6 +31,7 @@ using namespace std;
 #ifndef DISABLE_NAMED_MUTEX
 #include "NamedMutex.h"
 #endif
+
 
 //////////////////////////////////////
 int MatchFile::multi_thread_mode  = 0;

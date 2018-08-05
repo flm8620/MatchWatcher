@@ -15,4 +15,5 @@ public slots:
     void on_actionOpen_VisualSFM_mat_triggered();
     void WhenImageSelected(int row, int col);
     void WhenMatchedImageSelected(int row, int col);
+    void SetMaxFeatureSize(int size);
 };

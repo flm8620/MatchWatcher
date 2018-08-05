@@ -4,11 +4,12 @@
 #include <QGraphicsPixmapItem>
 #include <iostream>
 #include <QEvent>
+#include "marker.h"
 struct AbstractFeature
 {
     QPointF pos;
     float scale;
-    float orient_x, orient_y;
+    float orient;
 };
 
 class ImageView : public QGraphicsView
@@ -18,7 +19,7 @@ class ImageView : public QGraphicsView
 private:
     QGraphicsScene scene;
     QGraphicsPixmapItem* image_item;
-    std::map<int, AbstractFeature> features;
+    std::vector<std::pair<AbstractFeature, Marker*>> features;
     const int id;
 protected:
     void wheelEvent(QWheelEvent *) override;
@@ -37,15 +38,15 @@ public:
 
     void LoadImage(const QString& file);
 
-    void LoadFeatures(const std::map<int, AbstractFeature>& features);
+    void LoadFeatures(const std::vector<AbstractFeature>& features);
 
     void fitViewAllObject();
 
     bool GetFeaturePos(int id, QPointF& pos) {
-        if (features.find(id) == features.end())
+        if (id < 0 || id >= features.size())
             return false;
 
-        pos = features[id].pos;
+        pos = features[id].first.pos;
         return true;
     }
 
@@ -61,4 +62,8 @@ public:
         emit userMoved();
         this->QGraphicsView::scrollContentsBy(x, y);
     }
+
+    void SetMaxSize(double size);
+
+    void Clear();
 };

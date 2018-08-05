@@ -55,29 +55,18 @@ public slots:
         update();
     }
 public:
-    ImageHolder(QWidget* parent = nullptr) : QWidget(parent) {
-        QHBoxLayout* l = new QHBoxLayout(this);
-        left_view = new ImageView(nullptr, 0);
-        right_view = new ImageView(nullptr, 1);
-        l->addWidget(left_view);
-        l->addWidget(right_view);
-        line = new Line(left_view, right_view, this);
-        line->setAttribute(Qt::WA_TransparentForMouseEvents);
-        line->raise();
-        connect(left_view, SIGNAL(userMoved()), this, SLOT(updateForce()));
-        connect(right_view, SIGNAL(userMoved()), this, SLOT(updateForce()));
-    }
+    ImageHolder(QWidget* parent = nullptr);
 
     void resizeEvent(QResizeEvent *) override {
         line->setGeometry(rect());
     }
 
-    void LoadImageLeft(const QString& filename, const std::map<int, AbstractFeature>& features) {
+    void LoadImageLeft(const QString& filename, const std::vector<AbstractFeature>& features) {
         left_view->LoadImage(filename);
         left_view->LoadFeatures(features);
     }
 
-    void LoadImageRight(const QString& filename, const std::map<int, AbstractFeature>& features) {
+    void LoadImageRight(const QString& filename, const std::vector<AbstractFeature>& features) {
         right_view->LoadImage(filename);
         right_view->LoadFeatures(features);
     }
@@ -94,4 +83,6 @@ public:
         SetMatchesToLines();
         this->QWidget::paintEvent(e);
     }
+
+    void SetMaxFeatureSize(double size);
 };

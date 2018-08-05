@@ -32,6 +32,7 @@ template <class T> class Points;
 template <class T>
 class Points
 {
+public:
     typedef T (*TV2)[2];
     typedef T (*TV3)[3];
     typedef T (*TV5)[5];

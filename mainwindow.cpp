@@ -4,6 +4,7 @@
 #include <sstream>
 #include <string>
 #include <map>
+#include "FeaturePoints.h"
 
 void MainWindow::ApplyScene() {
     const std::map<int, std::string>& index_to_image_file = scene.IndexToImageFile();
@@ -27,6 +28,7 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent) {
     setupUi(this);
     connect(this->image_list, &QTableWidget::currentCellChanged, this, &MainWindow::WhenImageSelected);
     connect(this->image_match_list, &QTableWidget::currentCellChanged, this, &MainWindow::WhenMatchedImageSelected);
+    connect(this->size_slider, &QSlider::valueChanged, this, &MainWindow::SetMaxFeatureSize);
 }
 
 void MainWindow::on_actionOpen_triggered() {
@@ -38,11 +40,11 @@ void MainWindow::on_actionOpen_triggered() {
     last_file_name = file_name;
 
 
-    std::map<int, AbstractFeature> features;
-    features[0] = { {0.,0.}, 1.,0.,0. };
-    features[1] = { {100.,0.}, 1.,0.,0. };
-    features[2] = { {100.,100.}, 1.,0.,0. };
-    features[3] = { {200.,100.}, 1.,0.,0. };
+    std::vector<AbstractFeature> features(4);
+    features[0] = { {0.,0.}, 1.,0. };
+    features[1] = { {100.,0.}, 1.,0. };
+    features[2] = { {100.,100.}, 1.,0. };
+    features[3] = { {200.,100.}, 1.,0. };
     this->image_holder->LoadImageLeft(file_name, features);
     this->image_holder->LoadImageRight(file_name, features);
 
@@ -132,12 +134,25 @@ void MainWindow::WhenImageSelected(int r, int c) {
     }
     this->image_match_list->resizeColumnsToContents();
 
-    std::map<int, AbstractFeature> features;
-    for (const auto it : image_to_features.at(r)) {
+    FeatureData data;
+    QFileInfo img_file(index_to_image_file.at(img_id).c_str());
+    QString sift_file = img_file.dir().filePath(img_file.completeBaseName() + ".sift");
+    data.ReadSIFTB(sift_file.toStdString().c_str());
+
+    FeatureData::LocationData& loc_data = *data._locData;
+    auto ptr = Points<float>::TV5(loc_data);
+    std::vector<AbstractFeature> features;
+    for (int i = 0; i < data._npoint; i++) {
         AbstractFeature f;
-        f.pos = it.second;
-        features[it.first] = f;
+        float *p = *ptr;
+        f.pos = QPointF(p[0], p[1]);
+        f.scale = p[3];
+        f.orient = p[4];
+        features.push_back(f);
+        ptr++;
     }
+
+
     this->image_holder->LoadImageLeft(QString(index_to_image_file.at(r).c_str()), features);
 }
 
@@ -156,17 +171,33 @@ void MainWindow::WhenMatchedImageSelected(int r, int c) {
     const std::map<int, std::map<int, QPointF>>& image_to_features = scene.ImageToFeatures();
     const std::vector<std::pair<int, int>>& image_matches = scene.Image1Image2Matches().at(img1_id).at(img2_id);
 
+    
+    FeatureData data;
+    QFileInfo img2_file(index_to_image_file.at(img2_id).c_str());
+    QString sift_file = img2_file.dir().filePath(img2_file.completeBaseName() + ".sift");
+    data.ReadSIFTB(sift_file.toStdString().c_str());
 
-    std::map<int, AbstractFeature> features;
-    for (const auto it : image_to_features.at(img2_id)) {
+    FeatureData::LocationData& loc_data = *data._locData;
+    auto ptr = Points<float>::TV5(loc_data);
+    std::vector<AbstractFeature> features;
+    for (int i = 0; i < data._npoint; i++) {
         AbstractFeature f;
-        f.pos = it.second;
-        features[it.first] = f;
+        float *p = *ptr;
+        f.pos = QPointF(p[0], p[1]);
+        f.scale = p[3];
+        f.orient = p[4];
+        features.push_back(f);
+        ptr++;
     }
+
     this->image_holder->LoadImageRight(QString(index_to_image_file.at(img2_id).c_str()), features);
     std::map<int, int> matches;
     for (const auto it : image_matches) {
         matches[it.first] = it.second;
     }
     this->image_holder->SetMatches(matches);
+}
+
+void MainWindow::SetMaxFeatureSize(int size) {
+    this->image_holder->SetMaxFeatureSize(std::pow(10.0, double(size)/100.*5.0));
 }
