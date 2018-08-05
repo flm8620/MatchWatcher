@@ -48,14 +48,28 @@ void ImageView::fitViewAllObject() {
     fitInView(rect_large, Qt::KeepAspectRatio);
 }
 
-void ImageView::SetMaxSize(double size) {
-    for (const auto& it : features) {
-        const auto& f = it.first;
-        it.second->setVisible(f.scale < size);
+void ImageView::UpdateFeaturesVisibility() {
+    if (!show_features) {
+        for (const auto& it : features)
+            it.second->setVisible(false);
+    }
+    else {
+        if (!only_show_matched)
+            for (const auto& it : features) {
+                const auto& f = it.first;
+                it.second->setVisible(f.scale < max_feature_size);
+            }
+        else {
+            for (auto& feature : features)
+                feature.second->setVisible(false);
+            for (int i : matched)
+                features[i].second->setVisible(true);
+        }
     }
 }
 
 void ImageView::Clear() {
+    matched.clear();
     this->scene.clear();
     features.clear();
     image_item = nullptr;

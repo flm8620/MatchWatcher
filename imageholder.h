@@ -12,6 +12,7 @@ private:
 
     void paintEvent(QPaintEvent *e) override {
         QPainter p{ this };
+        p.setPen(QColor(0, 255, 0));
         p.setRenderHint(QPainter::Antialiasing);
         p.setClipRect(this->rect());
         const QPointF offset_left = left_view->mapToParent({ 0,0 });
@@ -23,9 +24,9 @@ private:
             if (ok1&&ok2) {
                 const QPointF p1 = left_view->MapImagePointToWidget(pos1);
                 const QPointF p2 = right_view->MapImagePointToWidget(pos2);
-                if(p1.x() < 0.f || p1.y() < 0.f || p1.x() > left_view->rect().width() || p1.y() > left_view->rect().height())
+                if (p1.x() < 0.f || p1.y() < 0.f || p1.x() > left_view->rect().width() || p1.y() > left_view->rect().height())
                     continue;
-                if(p2.x() < 0.f || p2.y() < 0.f || p2.x() > right_view->rect().width() || p2.y() > right_view->rect().height())
+                if (p2.x() < 0.f || p2.y() < 0.f || p2.x() > right_view->rect().width() || p2.y() > right_view->rect().height())
                     continue;
                 p.drawLine(p1 + offset_left, p2 + offset_right);
             }
@@ -73,6 +74,14 @@ public:
 
     void SetMatches(const std::map<int, int>& matches) {
         this->matches = matches;
+        std::set<int> img1, img2;
+        for (const auto it : matches) {
+            img1.insert(it.first);
+            img2.insert(it.second);
+        }
+        left_view->SetMatchedFeatures(img1);
+        right_view->SetMatchedFeatures(img2);
+        UpdateFeatureVisibility();
     }
 
     void SetMatchesToLines() {
@@ -84,5 +93,26 @@ public:
         this->QWidget::paintEvent(e);
     }
 
-    void SetMaxFeatureSize(double size);
+    void SetMaxFeatureSize(double size) {
+        left_view->SetMaxSize(size);
+        right_view->SetMaxSize(size);
+        UpdateFeatureVisibility();
+    }
+
+    void SetShowFeatures(bool show) {
+        left_view->SetShowFeatures(show);
+        right_view->SetShowFeatures(show);
+        UpdateFeatureVisibility();
+    }
+
+    void SetOnlyShowMatchedFeatures(bool checked) {
+        left_view->SetOnlyShowMatched(checked);
+        right_view->SetOnlyShowMatched(checked);
+        UpdateFeatureVisibility();
+    }
+
+    void UpdateFeatureVisibility() {
+        left_view->UpdateFeaturesVisibility();
+        right_view->UpdateFeaturesVisibility();
+    }
 };

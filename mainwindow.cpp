@@ -28,7 +28,6 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent) {
     setupUi(this);
     connect(this->image_list, &QTableWidget::currentCellChanged, this, &MainWindow::WhenImageSelected);
     connect(this->image_match_list, &QTableWidget::currentCellChanged, this, &MainWindow::WhenMatchedImageSelected);
-    connect(this->size_slider, &QSlider::valueChanged, this, &MainWindow::SetMaxFeatureSize);
 }
 
 void MainWindow::on_actionOpen_triggered() {
@@ -154,9 +153,11 @@ void MainWindow::WhenImageSelected(int r, int c) {
 
 
     this->image_holder->LoadImageLeft(QString(index_to_image_file.at(r).c_str()), features);
+    this->image_holder->updateForce();
 }
 
 void MainWindow::WhenMatchedImageSelected(int r, int c) {
+    if (r < 0 || c < 0) return;
     const int row1 = this->image_list->currentRow();
     const auto item1 = this->image_list->item(row1, 0);
     const auto item2 = this->image_match_list->item(r, 0);
@@ -171,7 +172,7 @@ void MainWindow::WhenMatchedImageSelected(int r, int c) {
     const std::map<int, std::map<int, QPointF>>& image_to_features = scene.ImageToFeatures();
     const std::vector<std::pair<int, int>>& image_matches = scene.Image1Image2Matches().at(img1_id).at(img2_id);
 
-    
+
     FeatureData data;
     QFileInfo img2_file(index_to_image_file.at(img2_id).c_str());
     QString sift_file = img2_file.dir().filePath(img2_file.completeBaseName() + ".sift");
@@ -196,8 +197,20 @@ void MainWindow::WhenMatchedImageSelected(int r, int c) {
         matches[it.first] = it.second;
     }
     this->image_holder->SetMatches(matches);
+    this->image_holder->updateForce();
 }
 
-void MainWindow::SetMaxFeatureSize(int size) {
-    this->image_holder->SetMaxFeatureSize(std::pow(10.0, double(size)/100.*5.0));
+void MainWindow::on_size_slider_valueChanged(int size) {
+    this->image_holder->SetMaxFeatureSize(std::pow(10.0, double(size) / 100.*5.0));
+    this->image_holder->updateForce();
+}
+
+void MainWindow::on_button_hide_feature_marker_toggled(bool checked) {
+    this->image_holder->SetShowFeatures(!checked);
+    this->image_holder->updateForce();
+}
+
+void MainWindow::on_button_show_only_matched_toggled(bool checked) {
+    this->image_holder->SetOnlyShowMatchedFeatures(checked);
+    this->image_holder->updateForce();
 }

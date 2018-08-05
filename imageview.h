@@ -5,6 +5,8 @@
 #include <iostream>
 #include <QEvent>
 #include "marker.h"
+#include <set>
+
 struct AbstractFeature
 {
     QPointF pos;
@@ -21,6 +23,10 @@ private:
     QGraphicsPixmapItem* image_item;
     std::vector<std::pair<AbstractFeature, Marker*>> features;
     const int id;
+    double max_feature_size;
+    bool show_features;
+    bool only_show_matched;
+    std::set<int> matched;
 protected:
     void wheelEvent(QWheelEvent *) override;
 signals:
@@ -34,6 +40,9 @@ public:
         this->setDragMode(ScrollHandDrag);
         this->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
         this->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+        max_feature_size = 1e100;
+        show_features = true;
+        only_show_matched = false;
     }
 
     void LoadImage(const QString& file);
@@ -51,11 +60,8 @@ public:
     }
 
     QPointF MapImagePointToWidget(QPointF pos) const {
-        QPoint p;
         QPointF pf = image_item->mapToScene(pos);
-        p.setX(pf.x());
-        p.setY(pf.y());
-        return mapFromScene(p);
+        return mapFromScene(pf);
     }
 
     void scrollContentsBy(int x, int y) override {
@@ -63,7 +69,23 @@ public:
         this->QGraphicsView::scrollContentsBy(x, y);
     }
 
-    void SetMaxSize(double size);
+    void SetMaxSize(double size) {
+        max_feature_size = size;
+    }
+
+    void SetShowFeatures(bool show) {
+        show_features = show;
+    }
+
+    void UpdateFeaturesVisibility();
+
+    void SetMatchedFeatures(std::set<int> matched) {
+        this->matched = matched;
+    }
+
+    void SetOnlyShowMatched(bool checked) {
+        only_show_matched = checked;
+    }
 
     void Clear();
 };

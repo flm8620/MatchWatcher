@@ -51,6 +51,30 @@
       </property>
       <layout class="QVBoxLayout" name="verticalLayout">
        <item>
+        <layout class="QHBoxLayout" name="horizontalLayout_3">
+         <item>
+          <widget class="QPushButton" name="button_show_only_matched">
+           <property name="text">
+            <string>Show only matched</string>
+           </property>
+           <property name="checkable">
+            <bool>true</bool>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QPushButton" name="button_hide_feature_marker">
+           <property name="text">
+            <string>Hide feature marker</string>
+           </property>
+           <property name="checkable">
+            <bool>true</bool>
+           </property>
+          </widget>
+         </item>
+        </layout>
+       </item>
+       <item>
         <widget class="ImageHolder" name="image_holder" native="true">
          <property name="sizePolicy">
           <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
@@ -65,16 +89,16 @@
          <item>
           <widget class="QSlider" name="size_slider">
            <property name="minimum">
-            <number>1</number>
+            <number>0</number>
            </property>
            <property name="maximum">
-            <number>100</number>
+            <number>99</number>
            </property>
            <property name="singleStep">
             <number>1</number>
            </property>
            <property name="sliderPosition">
-            <number>100</number>
+            <number>99</number>
            </property>
            <property name="orientation">
             <enum>Qt::Horizontal</enum>
