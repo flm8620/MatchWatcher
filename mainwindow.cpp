@@ -30,30 +30,6 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent) {
     connect(this->image_match_list, &QTableWidget::currentCellChanged, this, &MainWindow::WhenMatchedImageSelected);
 }
 
-void MainWindow::on_actionOpen_triggered() {
-    static QString last_file_name = "";
-    QString file_name = QFileDialog::getOpenFileName(this, tr("Open Image"),
-        last_file_name,
-        tr("Images (*.png *.xpm *.jpg)"));
-    if (file_name.isNull()) return;
-    last_file_name = file_name;
-
-
-    std::vector<AbstractFeature> features(4);
-    features[0] = { {0.,0.}, 1.,0. };
-    features[1] = { {100.,0.}, 1.,0. };
-    features[2] = { {100.,100.}, 1.,0. };
-    features[3] = { {200.,100.}, 1.,0. };
-    this->image_holder->LoadImageLeft(file_name, features);
-    this->image_holder->LoadImageRight(file_name, features);
-
-
-    std::map<int, int> matches;
-    matches[0] = 0;
-    matches[1] = 1;
-    this->image_holder->SetMatches(matches);
-}
-
 void MainWindow::on_actionOpen_VisualSFM_mat_triggered() {
     static QString last_file_name = "";
     QString file_name = QFileDialog::getOpenFileName(this, tr("Open VisualSFM matches exportation"),
