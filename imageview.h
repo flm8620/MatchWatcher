@@ -4,21 +4,17 @@
 #include <QGraphicsPixmapItem>
 #include <iostream>
 #include <QEvent>
+#include "imagescene.h"
 #include "marker.h"
 #include <set>
 
-struct AbstractFeature
-{
-    QPointF pos;
-    float scale;
-    float orient;
-};
 
 class ImageView : public QGraphicsView
 {
     Q_OBJECT
 
 private:
+    ImageScene* image_scene;
     QGraphicsScene scene;
     QGraphicsPixmapItem* image_item;
     std::vector<std::pair<AbstractFeature, Marker*>> features;
@@ -45,9 +41,11 @@ public:
         only_show_matched = false;
     }
 
-    void LoadImage(const QString& file);
+    void set_scene(ImageScene* image_scene) {
+        this->image_scene = image_scene;
+    }
 
-    void LoadFeatures(const std::vector<AbstractFeature>& features);
+    void LoadImage(int idx);
 
     void fitViewAllObject();
 

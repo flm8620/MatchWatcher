@@ -21,16 +21,15 @@ void ImageView::zoomOut() {
     this->setTransform(t);
 }
 
-void ImageView::LoadImage(const QString& file) {
+void ImageView::LoadImage(int idx) {
     Clear();
-    QPixmap img(file);
+    QPixmap img(image_scene->Images()[idx].image_file.c_str());
     if (img.isNull()) return;
     image_item = new QGraphicsPixmapItem(img);
     this->scene.addItem(image_item);
     this->fitViewAllObject();
-}
 
-void ImageView::LoadFeatures(const std::vector<AbstractFeature>& features) {
+    const std::vector<AbstractFeature>& features = image_scene->ImageToFeatures()[idx];
     for (int i = 0; i < features.size(); i++) {
         const auto& f = features[i];
         auto* marker = new Marker(i);

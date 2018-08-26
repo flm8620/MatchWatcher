@@ -1,8 +1,9 @@
 #pragma once
 #include <QHBoxLayout>
-#include "imageview.h"
 #include <iostream>
 #include <QPaintEvent>
+#include "imageview.h"
+
 class Line : public QWidget {
     Q_OBJECT
 private:
@@ -45,6 +46,8 @@ class ImageHolder : public QWidget
 {
     Q_OBJECT
 private:
+    ImageScene * scene;
+
     ImageView * left_view;
     ImageView * right_view;
     Line *line;
@@ -58,18 +61,22 @@ public slots:
 public:
     ImageHolder(QWidget* parent = nullptr);
 
+    void set_scene(ImageScene* scene) {
+        this->scene = scene;
+        left_view->set_scene(scene);
+        right_view->set_scene(scene);
+    }
+
     void resizeEvent(QResizeEvent *) override {
         line->setGeometry(rect());
     }
 
-    void LoadImageLeft(const QString& filename, const std::vector<AbstractFeature>& features) {
-        left_view->LoadImage(filename);
-        left_view->LoadFeatures(features);
+    void LoadImageLeft(int idx) {
+        left_view->LoadImage(idx);
     }
 
-    void LoadImageRight(const QString& filename, const std::vector<AbstractFeature>& features) {
-        right_view->LoadImage(filename);
-        right_view->LoadFeatures(features);
+    void LoadImageRight(int idx) {
+        right_view->LoadImage(idx);
     }
 
     void SetMatches(const std::map<int, int>& matches) {

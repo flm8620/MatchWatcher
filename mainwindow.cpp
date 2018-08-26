@@ -8,17 +8,17 @@
 #include "MatchFile.h"
 
 void MainWindow::ApplyScene() {
-    const auto& index_to_image_file = scene.IndexToImageFile();
+    const auto& images = scene.Images();
     //const auto& image_to_features = scene.ImageToFeatures();
     //const auto& image1_image2_matches = scene.Image1Image2Matches();
     this->image_list->clear();
     this->image_match_list->clear();
-    this->image_list->setRowCount(index_to_image_file.size());
+    this->image_list->setRowCount(images.size());
     int row = 0;
-    for (int i = 0; i < index_to_image_file.size(); i++) {
+    for (int i = 0; i < images.size(); i++) {
         QTableWidgetItem *id = new QTableWidgetItem(tr("%1").arg(i));
         this->image_list->setItem(row, 0, id);
-        QTableWidgetItem *file = new QTableWidgetItem(QFileInfo(index_to_image_file[i].c_str()).fileName().toStdString().c_str());
+        QTableWidgetItem *file = new QTableWidgetItem(QFileInfo(images[i].image_file.c_str()).fileName().toStdString().c_str());
         this->image_list->setItem(row, 1, file);
         row++;
     }
@@ -27,6 +27,7 @@ void MainWindow::ApplyScene() {
 
 MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent) {
     setupUi(this);
+    this->image_holder->set_scene(&scene);
     connect(this->image_list, &QTableWidget::currentCellChanged, this, &MainWindow::WhenImageSelected);
     connect(this->image_match_list, &QTableWidget::currentCellChanged, this, &MainWindow::WhenMatchedImageSelected);
 }
@@ -47,15 +48,10 @@ void MainWindow::on_actionOpen_VisualSFM_mat_triggered() {
 
 
 
-    struct ImageInfo
-    {
-        std::string image_file, sift_file, mat_file;
-        float focal, qw, qx, qy, qz, cx, cy, cz, r;
-    };
+    
 
     std::vector<ImageInfo> image_infos;
 
-    std::vector<std::string> index_to_image_file;
     std::vector<std::vector<AbstractFeature>> image_to_features;
     std::vector<std::map<int, std::vector<std::pair<int, int>>>> image1_image2_matches;
 
@@ -86,7 +82,6 @@ void MainWindow::on_actionOpen_VisualSFM_mat_triggered() {
         if (zero != 0) return;
         const QFileInfo image_file = dir.filePath(img_name.c_str());
         info.image_file = image_file.filePath().toStdString();
-        index_to_image_file.push_back(info.image_file);
 
         const QString image_base = image_file.completeBaseName();
         info.sift_file = dir.filePath(image_base + ".sift").toStdString();
@@ -145,7 +140,7 @@ void MainWindow::on_actionOpen_VisualSFM_mat_triggered() {
         }
     }
 
-    scene.setScene(index_to_image_file, image_to_features, image1_image2_matches);
+    scene.setScene(image_infos, image_to_features, image1_image2_matches);
     ApplyScene();
 }
 
@@ -155,7 +150,7 @@ void MainWindow::WhenImageSelected(int r, int c) {
     const int img_id = item->text().toInt(&ok);
     if (!ok) return;
 
-    const auto& index_to_image_file = scene.IndexToImageFile();
+    const auto& images = scene.Images();
     const auto& image_to_features = scene.ImageToFeatures();
     const auto& image_matches = scene.Image1Image2Matches()[img_id];
     this->image_match_list->clear();
@@ -164,7 +159,7 @@ void MainWindow::WhenImageSelected(int r, int c) {
     for (const auto& it : image_matches) {
         QTableWidgetItem *id2 = new QTableWidgetItem(tr("%1").arg(it.first));
         this->image_match_list->setItem(row, 0, id2);
-        QTableWidgetItem *file = new QTableWidgetItem(QFileInfo(index_to_image_file.at(it.first).c_str()).fileName().toStdString().c_str());
+        QTableWidgetItem *file = new QTableWidgetItem(QFileInfo(images.at(it.first).image_file.c_str()).fileName().toStdString().c_str());
         this->image_match_list->setItem(row, 1, file);
         QTableWidgetItem *count = new QTableWidgetItem(tr("%1").arg(it.second.size()));
         this->image_match_list->setItem(row, 2, count);
@@ -172,7 +167,7 @@ void MainWindow::WhenImageSelected(int r, int c) {
     }
     this->image_match_list->resizeColumnsToContents();
 
-    this->image_holder->LoadImageLeft(QString(index_to_image_file.at(r).c_str()), image_to_features[img_id]);
+    this->image_holder->LoadImageLeft(img_id);
     this->image_holder->updateForce();
 }
 
@@ -188,13 +183,13 @@ void MainWindow::WhenMatchedImageSelected(int r, int c) {
     if (!ok) return;
 
 
-    const auto& index_to_image_file = scene.IndexToImageFile();
+    const auto& images = scene.Images();
     const auto& image_to_features = scene.ImageToFeatures();
     const std::vector<std::pair<int, int>>& image_matches = scene.Image1Image2Matches()[img1_id].at(img2_id);
 
 
 
-    this->image_holder->LoadImageRight(QString(index_to_image_file.at(img2_id).c_str()), image_to_features[img2_id]);
+    this->image_holder->LoadImageRight(img2_id);
     std::map<int, int> matches;
     for (const auto it : image_matches) {
         matches[it.first] = it.second;
