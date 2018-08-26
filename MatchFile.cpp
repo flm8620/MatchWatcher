@@ -49,15 +49,15 @@ int (*MatchFile::matchfile_printf)(const char* format,... ) = ::printf;
 #endif
 
 
-#ifdef WIN32
-#define PATH_SLASH '\\'
-#define PATH_SLASH_X '/'
-#define PATH_PARENT "..\\"
-#else
+//#ifdef WIN32
+//#define PATH_SLASH '\\'
+//#define PATH_SLASH_X '/'
+//#define PATH_PARENT "..\\"
+//#else
 #define PATH_SLASH '/'
 #define PATH_SLASH_X '\\'
 #define PATH_PARENT "../"
-#endif
+//#endif
 
 void MatchFile::SetPrintFunction(int (*printf_func)(const char* format,... ))
 {
