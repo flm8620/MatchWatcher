@@ -9,6 +9,15 @@ void ImageView::wheelEvent(QWheelEvent *e) {
     emit userMoved();
 }
 
+void ImageView::mouseMoveEvent(QMouseEvent* e) {
+    QGraphicsView::mouseMoveEvent(e);
+    if (image_item) {
+        QPointF p = mapToScene(e->pos());
+        QPointF p_img = image_item->mapFromScene(p);
+        emit mouseAt(p_img.x(), p_img.y());
+    }
+}
+
 void ImageView::zoomIn() {
     QTransform t = this->transform();
     t.scale(1.25, 1.25);
@@ -23,6 +32,7 @@ void ImageView::zoomOut() {
 
 void ImageView::LoadImage(int idx) {
     Clear();
+    current_img_idx_ = idx;
     QPixmap img(image_scene->Images()[idx].image_file.c_str());
     if (img.isNull()) return;
     image_item = new QGraphicsPixmapItem(img);
@@ -43,8 +53,9 @@ void ImageView::LoadImage(int idx) {
 void ImageView::fitViewAllObject() {
     const QRectF rect = scene.sceneRect();
     const QPointF size = QPointF(rect.width(), rect.height());
-    const QRectF rect_large(rect.topLeft() - size, rect.bottomRight() + size);
-    fitInView(rect_large, Qt::KeepAspectRatio);
+    const QRectF rect_large(rect.topLeft() - size * 10, rect.bottomRight() + size * 10);
+    scene.setSceneRect(rect_large);
+    fitInView(rect, Qt::KeepAspectRatio);
 }
 
 void ImageView::UpdateFeaturesVisibility() {
@@ -67,9 +78,38 @@ void ImageView::UpdateFeaturesVisibility() {
     }
 }
 
+void ImageView::DrawEpipolarLine(double a, double b, double c) { // ax + by + c = 0
+    delete epipolar_line;
+    epipolar_line = new QGraphicsPathItem;
+    int width = image_item->pixmap().width();
+    int height = image_item->pixmap().height();
+    double x0 = -width, x1 = 2 * width, y0 = -height, y1 = 2 * height;
+    std::vector<QPointF> intersections;
+    double x, y;
+    y = (-a * x0 - c) / b;
+    if (y <= y1 && y >= y0) intersections.push_back({ x0, y });
+    y = (-a * x1 - c) / b;
+    if (y <= y1 && y >= y0) intersections.push_back({ x1, y });
+    x = (-b * y0 - c) / a;
+    if (x <= x1 && x >= x0) intersections.push_back({ x, y0 });
+    x = (-b * y1 - c) / a;
+    if (x <= x1 && x >= x0) intersections.push_back({ x, y1 });
+    if (intersections.size() == 2) {
+        QPainterPath path;
+        path.moveTo(intersections[0]);
+        path.lineTo(intersections[1]);
+        epipolar_line->setPath(path);
+        epipolar_line->setPen(QColor(255, 0, 0));
+        epipolar_line->pen().setWidth(2);
+        this->scene.addItem(epipolar_line);
+    }
+}
+
 void ImageView::Clear() {
+    current_img_idx_ = -1;
     matched.clear();
     this->scene.clear();
     features.clear();
     image_item = nullptr;
+    epipolar_line = nullptr;
 }

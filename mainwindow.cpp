@@ -78,10 +78,14 @@ void MainWindow::on_actionOpen_VisualSFM_mat_triggered() {
         int zero;
         if (!(iss >> img_name >> info.focal >>
             info.qw >> info.qx >> info.qy >> info.qz >>
-            info.cx >> info.cy >> info.cz >> info.r >> zero)) return;
+            info.Cx >> info.Cy >> info.Cz >> info.r >> zero)) return;
         if (zero != 0) return;
         const QFileInfo image_file = dir.filePath(img_name.c_str());
         info.image_file = image_file.filePath().toStdString();
+
+        QPixmap img(info.image_file.c_str());
+        info.width = img.width();
+        info.height = img.height();
 
         const QString image_base = image_file.completeBaseName();
         info.sift_file = dir.filePath(image_base + ".sift").toStdString();
@@ -182,9 +186,6 @@ void MainWindow::WhenMatchedImageSelected(int r, int c) {
     const int img1_id = item1->text().toInt(&ok);
     if (!ok) return;
 
-
-    const auto& images = scene.Images();
-    const auto& image_to_features = scene.ImageToFeatures();
     const std::vector<std::pair<int, int>>& image_matches = scene.Image1Image2Matches()[img1_id].at(img2_id);
 
 

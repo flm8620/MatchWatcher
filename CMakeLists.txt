@@ -7,6 +7,7 @@ set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTOUIC ON)
 
 find_package(Qt5Widgets CONFIG REQUIRED)
+find_package(Eigen3 REQUIRED NO_MODULE)
 file(GLOB SRC "*.h" "*.hpp" "*.cpp" "*.ui")
 add_executable(matchwatcher ${SRC})
-target_link_libraries(matchwatcher Qt5::Widgets)
+target_link_libraries(matchwatcher Qt5::Widgets  Eigen3::Eigen)

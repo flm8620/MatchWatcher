@@ -3,7 +3,7 @@
 #include <iostream>
 #include <QPaintEvent>
 #include "imageview.h"
-
+#include <Eigen/Dense>
 class Line : public QWidget {
     Q_OBJECT
 private:
@@ -34,7 +34,7 @@ private:
         }
     }
 public:
-    Line(ImageView * left_view, ImageView * right_view, QWidget* parent = nullptr)
+    Line(ImageView* left_view, ImageView* right_view, QWidget* parent = nullptr)
         : QWidget(parent), left_view(left_view), right_view(right_view) {
     }
     void set_matching_lines(const std::map<int, int>& matches) {
@@ -52,12 +52,16 @@ private:
     ImageView * right_view;
     Line *line;
     std::map<int, int> matches;
+    Eigen::Matrix3d fundamental_matrix;
 public slots:
     void updateForce() {
         left_view->viewport()->update();
         right_view->viewport()->update();
         update();
     }
+
+    void DrawEpipolarOnRight(double x, double y);
+    void DrawEpipolarOnLeft(double x, double y);
 public:
     ImageHolder(QWidget* parent = nullptr);
 
@@ -73,10 +77,16 @@ public:
 
     void LoadImageLeft(int idx) {
         left_view->LoadImage(idx);
+        if(right_view->current_img_idx()>=0) {
+            fundamental_matrix = ImageInfo::calcFundamentalMatrix(scene->Images()[idx], scene->Images()[right_view->current_img_idx()]);
+        }
     }
 
     void LoadImageRight(int idx) {
         right_view->LoadImage(idx);
+        if(left_view->current_img_idx()>=0) {
+            fundamental_matrix = ImageInfo::calcFundamentalMatrix(scene->Images()[left_view->current_img_idx()], scene->Images()[idx]);
+        }
     }
 
     void SetMatches(const std::map<int, int>& matches) {
