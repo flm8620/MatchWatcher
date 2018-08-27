@@ -1,6 +1,7 @@
 #include "imageholder.h"
 
 void ImageHolder::DrawEpipolarOnRight(double x, double y) {
+    if(!show_epipolar) return;
     if (right_view->current_img_idx() < 0) return;
     Eigen::Vector3d x1(x, y, 1.);
     Eigen::Vector3d Fx1 = fundamental_matrix * x1;
@@ -21,6 +22,7 @@ void ImageHolder::DrawEpipolarOnRight(double x, double y) {
 }
 
 void ImageHolder::DrawEpipolarOnLeft(double x, double y) {
+    if(!show_epipolar) return;
     if (left_view->current_img_idx() < 0) return;
     Eigen::Vector3d x2(x, y, 1.);
     Eigen::Vector3d x2F = x2.transpose() * fundamental_matrix;

@@ -17,4 +17,6 @@ public slots:
     void on_size_slider_valueChanged(int size);
     void on_button_hide_feature_marker_toggled(bool checked);
     void on_button_show_only_matched_toggled(bool checked);
+    void on_button_show_match_line_toggled(bool checked);
+    void on_button_show_epipolar_toggled(bool checked);
 };

@@ -72,6 +72,32 @@
            </property>
           </widget>
          </item>
+         <item>
+          <widget class="QPushButton" name="button_show_match_line">
+           <property name="text">
+            <string>Show Match Line</string>
+           </property>
+           <property name="checkable">
+            <bool>true</bool>
+           </property>
+           <property name="checked">
+            <bool>true</bool>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QPushButton" name="button_show_epipolar">
+           <property name="text">
+            <string>Epipolar</string>
+           </property>
+           <property name="checkable">
+            <bool>true</bool>
+           </property>
+           <property name="checked">
+            <bool>true</bool>
+           </property>
+          </widget>
+         </item>
         </layout>
        </item>
        <item>
@@ -156,7 +182,7 @@
      <x>0</x>
      <y>0</y>
      <width>1238</width>
-     <height>23</height>
+     <height>22</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuFile">

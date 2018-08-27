@@ -213,3 +213,13 @@ void MainWindow::on_button_show_only_matched_toggled(bool checked) {
     this->image_holder->SetOnlyShowMatchedFeatures(checked);
     this->image_holder->updateForce();
 }
+
+void MainWindow::on_button_show_match_line_toggled(bool checked) {
+    this->image_holder->SetShowMatchLines(checked);
+    this->image_holder->updateForce();
+}
+
+void MainWindow::on_button_show_epipolar_toggled(bool checked) {
+    this->image_holder->SetShowEpipolar(checked);
+    this->image_holder->updateForce();
+}

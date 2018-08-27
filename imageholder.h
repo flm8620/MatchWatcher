@@ -10,8 +10,10 @@ private:
     ImageView * left_view;
     ImageView * right_view;
     std::map<int, int> matches;
+    bool show = true;
 
     void paintEvent(QPaintEvent *e) override {
+        if (!show) return;
         QPainter p{ this };
         p.setPen(QColor(0, 255, 0));
         p.setRenderHint(QPainter::Antialiasing);
@@ -40,6 +42,9 @@ public:
     void set_matching_lines(const std::map<int, int>& matches) {
         this->matches = matches;
     }
+    void SetShowMatchLines(bool checked) {
+        show = checked;
+    }
 };
 
 class ImageHolder : public QWidget
@@ -53,6 +58,7 @@ private:
     Line *line;
     std::map<int, int> matches;
     Eigen::Matrix3d fundamental_matrix;
+    bool show_epipolar = true;
 public slots:
     void updateForce() {
         left_view->viewport()->update();
@@ -77,14 +83,14 @@ public:
 
     void LoadImageLeft(int idx) {
         left_view->LoadImage(idx);
-        if(right_view->current_img_idx()>=0) {
+        if (right_view->current_img_idx() >= 0) {
             fundamental_matrix = ImageInfo::calcFundamentalMatrix(scene->Images()[idx], scene->Images()[right_view->current_img_idx()]);
         }
     }
 
     void LoadImageRight(int idx) {
         right_view->LoadImage(idx);
-        if(left_view->current_img_idx()>=0) {
+        if (left_view->current_img_idx() >= 0) {
             fundamental_matrix = ImageInfo::calcFundamentalMatrix(scene->Images()[left_view->current_img_idx()], scene->Images()[idx]);
         }
     }
@@ -131,5 +137,13 @@ public:
     void UpdateFeatureVisibility() {
         left_view->UpdateFeaturesVisibility();
         right_view->UpdateFeaturesVisibility();
+    }
+
+    void SetShowMatchLines(bool checked) {
+        line->SetShowMatchLines(checked);
+    }
+
+    void SetShowEpipolar(bool checked) {
+        show_epipolar = checked;
     }
 };
