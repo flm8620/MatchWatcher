@@ -32,7 +32,7 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent) {
     connect(this->image_match_list, &QTableWidget::currentCellChanged, this, &MainWindow::WhenMatchedImageSelected);
 }
 
-void MainWindow::on_actionOpen_VisualSFM_mat_triggered() {
+void MainWindow::on_actionOpen_VisualSFM_nvm_triggered() {
     static QString last_file_name = "";
     QString file_name = QFileDialog::getOpenFileName(this, tr("Open VisualSFM nvm exportation"),
         last_file_name,
