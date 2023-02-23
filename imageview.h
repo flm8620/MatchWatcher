@@ -29,6 +29,7 @@ private:
 protected:
     void wheelEvent(QWheelEvent *) override;
     void mouseMoveEvent(QMouseEvent*) override;
+    void mouseDoubleClickEvent(QMouseEvent* event) override;
 signals:
     void userMoved();
     void mouseAt(double x, double y);

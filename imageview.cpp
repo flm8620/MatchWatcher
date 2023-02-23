@@ -17,6 +17,12 @@ void ImageView::mouseMoveEvent(QMouseEvent* e) {
         emit mouseAt(p_img.x(), p_img.y());
     }
 }
+void ImageView::mouseDoubleClickEvent(QMouseEvent* event)
+{
+    if (QGraphicsItem* item = itemAt(event->pos())) {
+        std::cout << "(" << item->pos().x() << "," << item->pos().y() << ")" << std::endl;
+    }
+}
 
 void ImageView::zoomIn() {
     QTransform t = this->transform();
