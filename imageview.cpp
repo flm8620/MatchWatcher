@@ -17,6 +17,14 @@ void ImageView::mouseMoveEvent(QMouseEvent* e) {
         emit mouseAt(p_img.x(), p_img.y());
     }
 }
+void ImageView::mouseDoubleClickEvent(QMouseEvent* event)
+{
+    if (Marker* item = dynamic_cast<Marker*>(itemAt(event->pos()))) {
+        int fid = item->fid();
+        auto feat=this->features[fid].first;
+        std::cout << fid << ":(" << feat.pos.x() << "," << feat.pos.y() << "," << feat.scale << "," << feat.orient << ")" << std::endl;
+    }
+}
 
 void ImageView::zoomIn() {
     QTransform t = this->transform();
