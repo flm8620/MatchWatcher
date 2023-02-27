@@ -19,8 +19,10 @@ void ImageView::mouseMoveEvent(QMouseEvent* e) {
 }
 void ImageView::mouseDoubleClickEvent(QMouseEvent* event)
 {
-    if (QGraphicsItem* item = itemAt(event->pos())) {
-        std::cout << "(" << item->pos().x() << "," << item->pos().y() << ")" << std::endl;
+    if (Marker* item = dynamic_cast<Marker*>(itemAt(event->pos()))) {
+        int fid = item->fid();
+        auto feat=this->features[fid].first;
+        std::cout << fid << ":(" << feat.pos.x() << "," << feat.pos.y() << "," << feat.scale << "," << feat.orient << ")" << std::endl;
     }
 }
 

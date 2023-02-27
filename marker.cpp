@@ -7,6 +7,7 @@ Marker::Marker(int id)
     setZValue(10);
     radius = 15.0;
     innerRadius = 10.0;
+    _fid = id;
     this->color = this->idToColor(id);
 }
 
