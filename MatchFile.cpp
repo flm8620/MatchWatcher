@@ -23,8 +23,11 @@
 #include <fcntl.h>
 #include <algorithm>
 #include <iomanip>
-#include <corecrt_io.h>
 #include <cassert>
+#include <unistd.h>
+#include <cstring> // for memset
+#include <cstdlib> // for malloc, free
+#include <cstdio>  // for printf
 using namespace std;
 #include "MatchFile.h"
 #define DISABLE_NAMED_MUTEX
@@ -44,20 +47,10 @@ int	MatchFile::record_reservation = 20;
 int (*MatchFile::matchfile_printf)(const char* format,... ) = ::printf;
 #define printf matchfile_printf
 
-#ifdef _WIN64
-#define _lseek _lseeki64
-#endif
 
-
-//#ifdef WIN32
-//#define PATH_SLASH '\\'
-//#define PATH_SLASH_X '/'
-//#define PATH_PARENT "..\\"
-//#else
 #define PATH_SLASH '/'
 #define PATH_SLASH_X '\\'
 #define PATH_PARENT "../"
-//#endif
 
 void MatchFile::SetPrintFunction(int (*printf_func)(const char* format,... ))
 {
@@ -133,8 +126,8 @@ int  MatchFile::MakeWritable()
 
     GetMatchFilePath(match_path);
 
-    _close(_fid);
-    _fid = _open(match_path, _O_BINARY|_O_CREAT|_O_RDWR, _S_IWRITE|_S_IREAD);
+    close(_fid);
+    _fid = open(match_path, O_CREAT|O_RDWR, S_IWUSR|S_IRUSR);
     if(_fid > 0)
     {
         _opened_for_write = 1;
@@ -158,8 +151,8 @@ void MatchFile::VerifyFeatureCount(int feature_count)
             _header.feature_count = feature_count;
             if(MakeWritable())
             {
-                _lseek(_fid, 0, SEEK_SET);
-                _write(_fid, &_header, sizeof(_header));
+                lseek(_fid, 0, SEEK_SET);
+                write(_fid, &_header, sizeof(_header));
                 //printf("Update feature count [%d]!\r\n", feature_count);
             }
         }
@@ -181,14 +174,14 @@ void MatchFile::DeleteMatchRecord(const char* pattern)
         {            
             int NM;	
             RecordLoc * loc = _match_records[i];
-            _lseek(_fid, loc->read_loc, SEEK_SET);
-            _read(_fid, &NM, sizeof(int));
+            lseek(_fid, loc->read_loc, SEEK_SET);
+            read(_fid, &NM, sizeof(int));
 
             ////////////////////////////////
             if(NM == 0) continue;
             MakeWritable();
-            _lseek(_fid, loc->read_loc, SEEK_SET);
-            NM = 0;	    _write(_fid, &NM, sizeof(int));
+            lseek(_fid, loc->read_loc, SEEK_SET);
+            NM = 0;	    write(_fid, &NM, sizeof(int));
             changed = 1;
         }
     }
@@ -231,14 +224,14 @@ int  MatchFile::OpenMatchFile(const char* imagepath, int write, int mode)
 #endif
 
     if(!write)
-        _fid = _open(match_path, _O_BINARY|_O_RDONLY);
+        _fid = open(match_path, O_RDONLY);
     else 
-        _fid = _open(match_path, _O_BINARY|_O_CREAT|_O_RDWR, _S_IWRITE|_S_IREAD);
+        _fid = open(match_path, O_CREAT|O_RDWR, S_IWUSR|S_IRUSR);
 
     if(_fid > 0) 
     {
         //read file _header
-        int readsz = _read(_fid, (char*) (&_header), sizeof(_header));
+        int readsz = read(_fid, (char*) (&_header), sizeof(_header));
         _opened_for_write = write; 
 
         if( sizeof(_header) == readsz && _header.definition_size >0 && 
@@ -247,7 +240,7 @@ int  MatchFile::OpenMatchFile(const char* imagepath, int write, int mode)
         {
             assert(_header.file_count>=0);
             _record_definition.resize(_header.definition_buf, 0);
-            _read(_fid, (char*) &_record_definition[0], _header.definition_size);
+            read(_fid, (char*) &_record_definition[0], _header.definition_size);
             GetRecordList();
             _header_changed = 0;
             _recordloc_unchanged = _header.definition_size;
@@ -510,19 +503,19 @@ int  MatchFile::AddImageMatch(const char* relative_path)
         //read match data that needs to move
         vector<char> read_buffer(extra_space);
         char* pbuf = &read_buffer[0];
-        _lseek(_fid, _match_records[0]->read_loc, SEEK_SET);
-        _read(_fid, &read_buffer[0], extra_space);
+        lseek(_fid, _match_records[0]->read_loc, SEEK_SET);
+        read(_fid, &read_buffer[0], extra_space);
 
         //write match data to the end of file
-        int match_write_location = _match_records.back()->read_loc + _match_records.back()->block_size;
-        _lseek(_fid, match_write_location, SEEK_SET);
+        int matchwrite_location = _match_records.back()->read_loc + _match_records.back()->block_size;
+        lseek(_fid, matchwrite_location, SEEK_SET);
         for(int i = 0; i < match_move_needed; i++)
         {
             RecordLoc* loc = _match_records[i];
-            _write(_fid, pbuf, loc->block_size);
+            write(_fid, pbuf, loc->block_size);
             pbuf += (loc->block_size + loc->trash_size);
-            loc->read_loc = match_write_location;
-            match_write_location += loc->block_size;
+            loc->read_loc = matchwrite_location;
+            matchwrite_location += loc->block_size;
             loc->trash_size = 0;
         }
 
@@ -540,7 +533,7 @@ int  MatchFile::AddImageMatch(const char* relative_path)
         GetRecordList();
 
         RecordLoc* rec = (RecordLoc*) (&_record_definition[_header.definition_size]);
-        rec->read_loc = match_write_location;
+        rec->read_loc = matchwrite_location;
         rec->trash_size = 0;
         rec->block_size = 0;
         rec->extra_size = elen;
@@ -549,8 +542,8 @@ int  MatchFile::AddImageMatch(const char* relative_path)
 
 
         //write all previous data to file
-        _lseek(_fid, sizeof(_header), SEEK_SET);
-        _write(_fid, &_record_definition[0], _header.definition_size);
+        lseek(_fid, sizeof(_header), SEEK_SET);
+        write(_fid, &_record_definition[0], _header.definition_size);
 
         ////
         _header.definition_size += rlen;
@@ -578,7 +571,7 @@ void MatchFile::CloseMatchFile()
     {
         if(_opened_for_write && delay_header_update)	UpdateHeaderAndRecordLoc();
         ResetMatchFile();
-        _close(_fid);
+        close(_fid);
         _fid = 0;
         _opened_for_write = 0; 
         _matchfile_mode = 0;
@@ -612,7 +605,7 @@ void MatchFile::WriteIMatch(MatchFile* mat, const char* image1, const char* imag
     if(mat == NULL || ! mat->IsValid())
     {
         WriteIMatch(image1, image2, NM, tvg, inliers);
-    }else 	if(_stricmp(mat->_filepath, image1) ==0)
+    }else 	if(strcasecmp(mat->_filepath, image1) ==0)
     {
         if(mat->MakeWritable())
         {
@@ -623,7 +616,7 @@ void MatchFile::WriteIMatch(MatchFile* mat, const char* image1, const char* imag
         {
             file2.WriteIMatch(image1, 1, NM, tvg, inliers);
         }
-    }else if(_stricmp(mat->_filepath, image2) == 0)
+    }else if(strcasecmp(mat->_filepath, image2) == 0)
     {
         if(mat->MakeWritable())
         {
@@ -675,12 +668,12 @@ void MatchFile::WriteIMatch(const char* image_match, int reverse, int NM,
     //read in the number of 
     if(num_match_verification || NM == 0)
     {
-        _lseek(_fid, loc->read_loc, SEEK_SET);
-        _read(_fid, &fnm, sizeof(int));
+        lseek(_fid, loc->read_loc, SEEK_SET);
+        read(_fid, &fnm, sizeof(int));
         NM = fnm;
     }else
     {
-        _lseek(_fid, loc->read_loc + sizeof(int), SEEK_SET);
+        lseek(_fid, loc->read_loc + sizeof(int), SEEK_SET);
     }
 
     assert(tvg.NF<=0 || tvg.NE==0 || tvg.NF == tvg.NE);
@@ -714,7 +707,7 @@ void MatchFile::WriteIMatch(const char* image_match, int reverse, int NM,
         {
             printf("Reallocate space fo record %d\r\n", index);
             UpdateHeaderAndRecordLoc();
-            _lseek(_fid, loc->read_loc + sizeof(int), SEEK_SET);
+            lseek(_fid, loc->read_loc + sizeof(int), SEEK_SET);
         }
     }
 
@@ -724,25 +717,25 @@ void MatchFile::WriteIMatch(const char* image_match, int reverse, int NM,
     {
         rec.tvg.SetGeometry(tvg);
         //write inlier match record
-        _write(_fid, &rec, sizeof(rec));
-        _lseek(_fid, NM * sizeof(int) * 2, SEEK_CUR);
+        write(_fid, &rec, sizeof(rec));
+        lseek(_fid, NM * sizeof(int) * 2, SEEK_CUR);
         if(tvg.NF >0)
         {
-            _write(_fid, inliers[0], sizeof(int) * tvg.NF);
-            _write(_fid, inliers[1], sizeof(int) * tvg.NF);
+            write(_fid, inliers[0], sizeof(int) * tvg.NF);
+            write(_fid, inliers[1], sizeof(int) * tvg.NF);
         }
 
     }else
     {
         rec.tvg.SetGeometryR(tvg);;
         //write inlier match record
-        _write(_fid, &rec, sizeof(rec));
+        write(_fid, &rec, sizeof(rec));
 
-        _lseek(_fid, NM * sizeof(int) * 2, SEEK_CUR);
+        lseek(_fid, NM * sizeof(int) * 2, SEEK_CUR);
         if(tvg.NF > 0)
         {
-            _write(_fid, inliers[1], sizeof(int) * tvg.NF);
-            _write(_fid, inliers[0], sizeof(int) * tvg.NF);
+            write(_fid, inliers[1], sizeof(int) * tvg.NF);
+            write(_fid, inliers[0], sizeof(int) * tvg.NF);
         }
     }
 }
@@ -813,21 +806,21 @@ void MatchFile::WritePMatch(const char* image_match, int FC, int NM, Points<int>
     MatchRecordV3 rec;
 
     //write pmatch
-    _lseek(_fid, loc->read_loc, SEEK_SET);
+    lseek(_fid, loc->read_loc, SEEK_SET);
     //write match record
-    _write(_fid, &NM, sizeof(int));
-    _write(_fid, &rec, sizeof(rec));
+    write(_fid, &NM, sizeof(int));
+    write(_fid, &rec, sizeof(rec));
 
     //write matched pairs
     if(NM <=0) return;
     if(reverse == 0)
     {
-        _write(_fid, matches[0], sizeof(int) * NM);
-        _write(_fid, matches[1], sizeof(int) * NM);
+        write(_fid, matches[0], sizeof(int) * NM);
+        write(_fid, matches[1], sizeof(int) * NM);
     }else
     {
-        _write(_fid, matches[1], sizeof(int) * NM);
-        _write(_fid, matches[0], sizeof(int) * NM);
+        write(_fid, matches[1], sizeof(int) * NM);
+        write(_fid, matches[0], sizeof(int) * NM);
     }
 }
 
@@ -836,17 +829,17 @@ void MatchFile::UpdateHeaderAndRecordLoc()
     //the file _header
     if(_header_changed)
     {
-        _lseek(_fid, 0, SEEK_SET);
+        lseek(_fid, 0, SEEK_SET);
         //VERIFY(_header.version == MATCH_FILE_LATEST_VERSION);
-        _write(_fid, &_header, sizeof(_header));
+        write(_fid, &_header, sizeof(_header));
         _header_changed = 0;
     }
 
     if(_header.definition_size > _recordloc_unchanged)
     {
         //recordloc
-        _lseek(_fid, sizeof(_header) + _recordloc_unchanged, SEEK_SET);
-        _write(_fid, &_record_definition[_recordloc_unchanged], _header.definition_size - _recordloc_unchanged);
+        lseek(_fid, sizeof(_header) + _recordloc_unchanged, SEEK_SET);
+        write(_fid, &_record_definition[_recordloc_unchanged], _header.definition_size - _recordloc_unchanged);
         _recordloc_unchanged = _header.definition_size;
     }
 }
@@ -870,14 +863,14 @@ int MatchFile::GetPMatch(const char* image_path, int FC, int& NM, Points<int>& m
 
         if(loc->fcount == FC)
         {
-            _lseek(_fid, loc->read_loc, SEEK_SET);
-            _read(_fid, &NM, sizeof(int));
-            _lseek(_fid, sizeof(MatchRecordV3), SEEK_CUR);
+            lseek(_fid, loc->read_loc, SEEK_SET);
+            read(_fid, &NM, sizeof(int));
+            lseek(_fid, sizeof(MatchRecordV3), SEEK_CUR);
 
             if(NM >0 && NM <= FC)
             {
                 matches.resize(NM, 2);
-                _read(_fid, matches[0], 2 * NM * sizeof(int));
+                read(_fid, matches[0], 2 * NM * sizeof(int));
             }else
             {
                 matches.resize(0, 0);
@@ -911,15 +904,15 @@ int MatchFile::GetPMatchR(const char* image_path, int FC, int& NM, Points<int>& 
 
         if(loc->fcount == FC)
         {
-            _lseek(_fid, loc->read_loc, SEEK_SET);
-            _read(_fid, &NM, sizeof(int));
-            _lseek(_fid, sizeof(MatchRecordV3), SEEK_CUR);
+            lseek(_fid, loc->read_loc, SEEK_SET);
+            read(_fid, &NM, sizeof(int));
+            lseek(_fid, sizeof(MatchRecordV3), SEEK_CUR);
 
             if(NM > 0 && NM <= FC)
             {
                 matches.resize(NM, 2);
-                _read(_fid, matches[1],  NM * sizeof(int));
-                _read(_fid, matches[0],  NM * sizeof(int));
+                read(_fid, matches[1],  NM * sizeof(int));
+                read(_fid, matches[0],  NM * sizeof(int));
             }else
             {
                 matches.resize(0, 0);
@@ -949,8 +942,8 @@ int MatchFile::	GetMatchCount(const char* image_path, int&NM, int& NF)
     {
         int counts[3];
         RecordLoc * loc = _match_records[index];
-        _lseek(_fid, loc->read_loc, SEEK_SET);
-        _read(_fid, counts, sizeof(counts));
+        lseek(_fid, loc->read_loc, SEEK_SET);
+        read(_fid, counts, sizeof(counts));
         NM = counts[0];	NF = counts[2];
         return 1;
     }
@@ -982,9 +975,9 @@ int MatchFile::GetIMatch(const char* image_path, int FC, TwoViewGeometry& tvg,  
         {
             int NM;
             MatchRecordV3 rec;
-            _lseek(_fid, loc->read_loc, SEEK_SET);
-            _read(_fid, &NM, sizeof(int));
-            _read(_fid, &rec, sizeof(rec));
+            lseek(_fid, loc->read_loc, SEEK_SET);
+            read(_fid, &NM, sizeof(int));
+            read(_fid, &rec, sizeof(rec));
             if(NM > loc->fcount || NM < 0)
             {
                 tvg.ResetGeometry();
@@ -1006,9 +999,9 @@ int MatchFile::GetIMatch(const char* image_path, int FC, TwoViewGeometry& tvg,  
                 //
                 if(tvg.NF > 0)
                 {
-                    _lseek(_fid, NM * 2 * sizeof(int), SEEK_CUR);
+                    lseek(_fid, NM * 2 * sizeof(int), SEEK_CUR);
                     inliers.resize(tvg.NF, 2);
-                    _read(_fid, inliers[0], 2 * tvg.NF * sizeof(int));
+                    read(_fid, inliers[0], 2 * tvg.NF * sizeof(int));
                 }else
                 {
                     inliers.resize(0, 0);
@@ -1046,9 +1039,9 @@ int MatchFile::GetIMatchR(const char* image_path, int FC, TwoViewGeometry& tvg, 
         {
             int NM;
             MatchRecordV3 rec;
-            _lseek(_fid, loc->read_loc, SEEK_SET);
-            _read(_fid, &NM, sizeof(int));
-            _read(_fid, &rec, sizeof(rec));
+            lseek(_fid, loc->read_loc, SEEK_SET);
+            read(_fid, &NM, sizeof(int));
+            read(_fid, &rec, sizeof(rec));
             if(NM > loc->fcount || NM < 0)
             {
                 tvg.ResetGeometry();
@@ -1069,10 +1062,10 @@ int MatchFile::GetIMatchR(const char* image_path, int FC, TwoViewGeometry& tvg, 
                 //
                 if(tvg.NF > 0)
                 {
-                    _lseek(_fid, NM * 2 * sizeof(int), SEEK_CUR);
+                    lseek(_fid, NM * 2 * sizeof(int), SEEK_CUR);
                     inliers.resize(tvg.NF, 2);
-                    _read(_fid, inliers[1],  tvg.NF * sizeof(int));
-                    _read(_fid, inliers[0],  tvg.NF * sizeof(int));
+                    read(_fid, inliers[1],  tvg.NF * sizeof(int));
+                    read(_fid, inliers[0],  tvg.NF * sizeof(int));
                 }else
                 {
                     inliers.resize(0, 0);

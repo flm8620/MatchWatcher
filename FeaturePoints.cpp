@@ -16,7 +16,7 @@
 //  General Public License for more details.
 //
 ////////////////////////////////////////////////////////////////////////////////
-#include <io.h>
+#include <unistd.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <fcntl.h>
@@ -24,6 +24,8 @@
 #include <string>
 #include <fstream>
 #include <algorithm>
+#include <cstring>
+#include <cmath>
 using namespace std;
 
 #include "FeaturePoints.h"
@@ -228,7 +230,7 @@ void FeatureData::saveSIFTB2(const char* szFile)
 
     int i,j, sift_eof = SIFT_EOF;
     sift_fileheader_v2 sfh;
-    int fd = _open(szFile, _O_BINARY|_O_CREAT|_O_WRONLY|_O_TRUNC,_S_IREAD |_S_IWRITE);
+    int fd = open(szFile, O_CREAT|O_WRONLY|O_TRUNC,S_IREAD|S_IWRITE);
     if(fd<0) return;
 
     ///
@@ -237,7 +239,7 @@ void FeatureData::saveSIFTB2(const char* szFile)
     sfh.npoint  = _locData->npoint();
     sfh.nLocDim = _locData->ndim();
     sfh.nDesDim = _desData->ndim();
-    _write(fd, &sfh, sizeof(sfh));
+    write(fd, &sfh, sizeof(sfh));
     ////
     LTYPE * lp;
     DTYPE * dp;
@@ -259,7 +261,7 @@ void FeatureData::saveSIFTB2(const char* szFile)
             *fp++ = (float) *lp++;
         }
     }
-    _write(fd,fph,sizeof(float)*Max);
+    write(fd,fph,sizeof(float)*Max);
 
     dp = _desData->data();
     Max = sfh.npoint*sfh.nDesDim;
@@ -272,33 +274,33 @@ void FeatureData::saveSIFTB2(const char* szFile)
             *ucp++ = *dp;
         }
     }
-    _write(fd,fph,sizeof(unsigned char)*Max);
-    _write(fd,&sift_eof, sizeof(int));
-    _close(fd);
+    write(fd,fph,sizeof(unsigned char)*Max);
+    write(fd,&sift_eof, sizeof(int));
+    close(fd);
 }
 
 int FeatureData::ReadSIFTB(const char* szFile)
 {
     int name, version, npoint, nLocDim, nDesDim, sift_eof, sorted = 0;
-    int fd = _open(szFile, _O_BINARY|_O_RDONLY,_S_IREAD);
+    int fd = open(szFile, O_RDONLY,S_IREAD);
     if (fd<0) return 0;
     ///
-    _read(fd, &name, sizeof(int));
-    _read(fd, &version, sizeof(int));
+    read(fd, &name, sizeof(int));
+    read(fd, &version, sizeof(int));
     if(IsValidFeatureName(name) && IsValidVersionName(version))
     {
         //version 2 file
-        _read(fd, &npoint, sizeof(int));
-        _read(fd, &nLocDim, sizeof(int));
-        _read(fd, &nDesDim, sizeof(int));
+        read(fd, &npoint, sizeof(int));
+        read(fd, &nLocDim, sizeof(int));
+        read(fd, &nDesDim, sizeof(int));
         if(npoint>0 && nLocDim >0 && nDesDim==128)
         {
             ResizeFeatureData(npoint,nLocDim,nDesDim);
-            _read(fd,_locData->data(), nLocDim *npoint*sizeof(float));
-            _read(fd,_desData->data(), nDesDim*npoint*sizeof(unsigned char));
-            _read(fd,&sift_eof,sizeof(int));
+            read(fd,_locData->data(), nLocDim *npoint*sizeof(float));
+            read(fd,_desData->data(), nDesDim*npoint*sizeof(unsigned char));
+            read(fd,&sift_eof,sizeof(int));
             //assert(sift_eof == SIFT_EOF);
-            _close(fd);
+            close(fd);
             _locData->_file_version = version;
             SetUpdated();
 #ifdef DEBUG_DESCRIPTOR_BUG
@@ -322,13 +324,13 @@ int FeatureData::ReadSIFTB(const char* szFile)
         }else
         {
             ResizeFeatureData(0, 0, 0);
-            _close(fd);
+            close(fd);
             return 0;
         }
         return 1;
     }else 
     {
-        _close(fd);
+        close(fd);
         return 0;
     }
 }
@@ -336,50 +338,50 @@ int FeatureData::ReadSIFTB(const char* szFile)
 int FeatureData::ReadSIFTB_DES(const char* szFile, int fmax)
 {
     sift_fileheader_v2 sfh;	
-    int fd = _open(szFile, _O_BINARY|_O_RDONLY,_S_IREAD);
+    int fd = open(szFile, O_RDONLY,S_IREAD);
     if (fd<0) return 0;
     ///
-    _read(fd, &sfh, sizeof(sfh));
+    read(fd, &sfh, sizeof(sfh));
 
     int npoint = fmax > 0 ? std::min(sfh.npoint, fmax) : sfh.npoint;
     if(_desData)
         _desData->resize(sfh.nDesDim, npoint);
     else
         _desData = new DescriptorData(sfh.nDesDim, npoint);
-    _lseek(fd, sfh.nLocDim *sfh.npoint*sizeof(float), SEEK_CUR);
-    _read(fd,_desData->data(), sfh.nDesDim*npoint*sizeof(unsigned char));
-    _close(fd);
+    lseek(fd, sfh.nLocDim *sfh.npoint*sizeof(float), SEEK_CUR);
+    read(fd,_desData->data(), sfh.nDesDim*npoint*sizeof(unsigned char));
+    close(fd);
     return 1;
 }
 
 int FeatureData::ReadSIFTB_LOC(const char* szFile, float * buf, int nmax )
 {
     sift_fileheader_v2 sfh;	
-    int fd = _open(szFile, _O_BINARY|_O_RDONLY,_S_IREAD);
+    int fd = open(szFile, O_RDONLY,S_IREAD);
     if (fd<0) return 0;
     ///
-    _read(fd, &sfh, sizeof(sfh));
+    read(fd, &sfh, sizeof(sfh));
     
     nmax = std::min(nmax, sfh.npoint);
         
-    _read(fd, buf, sfh.nLocDim *sfh.npoint*sizeof(float));
-    _close(fd);
+    read(fd, buf, sfh.nLocDim *sfh.npoint*sizeof(float));
+    close(fd);
     return nmax;
 }
 
 int FeatureData::ReadSIFTB_DES(const char* szFile, unsigned char * buf, int nmax )
 {
     sift_fileheader_v2 sfh;	
-    int fd = _open(szFile, _O_BINARY|_O_RDONLY,_S_IREAD);
+    int fd = open(szFile, O_RDONLY,S_IREAD);
     if (fd<0) return 0;
     ///
-    _read(fd, &sfh, sizeof(sfh));
+    read(fd, &sfh, sizeof(sfh));
     
     nmax = std::min(nmax, sfh.npoint);
         
-    _lseek(fd, sfh.nLocDim *sfh.npoint*sizeof(float), SEEK_CUR);
-    _read(fd, buf, sfh.nDesDim* nmax*sizeof(unsigned char));
-    _close(fd);
+    lseek(fd, sfh.nLocDim *sfh.npoint*sizeof(float), SEEK_CUR);
+    read(fd, buf, sfh.nDesDim* nmax*sizeof(unsigned char));
+    close(fd);
     return nmax;
 }
 
@@ -404,16 +406,16 @@ int FeatureData::ReadSIFTA_DES(const char* szFile, unsigned char * buf, int nmax
 int FeatureData::ReadSIFTB(const char* szFile, float * locbuf, unsigned char * desbuf, int nmax)
 {
     sift_fileheader_v2 sfh;	
-    int fd = _open(szFile, _O_BINARY|_O_RDONLY,_S_IREAD);
+    int fd = open(szFile, O_RDONLY,S_IREAD);
     if (fd<0) return 0;
     ///
-    _read(fd, &sfh, sizeof(sfh));
+    read(fd, &sfh, sizeof(sfh));
     
     nmax = std::min(nmax, sfh.npoint);
         
-    _read(fd, locbuf, sfh.nLocDim *sfh.npoint*sizeof(float));
-    _read(fd, desbuf, sfh.nDesDim* nmax*sizeof(unsigned char));
-    _close(fd);
+    read(fd, locbuf, sfh.nLocDim *sfh.npoint*sizeof(float));
+    read(fd, desbuf, sfh.nDesDim* nmax*sizeof(unsigned char));
+    close(fd);
     return nmax;
 
 }
@@ -422,10 +424,10 @@ int FeatureData::ReadSIFTB(const char* szFile, float * locbuf, unsigned char * d
 int FeatureData::ReadSIFTB_LOC(const char* szFile)
 {
     sift_fileheader_v2 sfh;	
-    int fd = _open(szFile, _O_BINARY|_O_RDONLY,_S_IREAD);
+    int fd = open(szFile, O_RDONLY,S_IREAD);
     if (fd<0) return 0;
     ///
-    _read(fd, &sfh, sizeof(sfh));
+    read(fd, &sfh, sizeof(sfh));
     if(IsValidFeatureName(sfh.szFeature) && IsValidVersionName(sfh.szVersion))
     {
         //version 2 file
@@ -435,25 +437,25 @@ int FeatureData::ReadSIFTB_LOC(const char* szFile)
             ResizeLocationData(sfh.npoint,sfh.nLocDim);
             if(_locData->data())
             {
-                _read(fd,_locData->data(), sfh.nLocDim *sfh.npoint*sizeof(float));
+                read(fd,_locData->data(), sfh.nLocDim *sfh.npoint*sizeof(float));
                 _locData->_file_version  = sfh.szVersion;
             }else
             {
                 printf("ERROR: ReadSIFTB_LOC allocatoin faled\r\n");
             }
-            _close(fd);
+            close(fd);
             SetUpdated();
         }else
         {
             ResizeFeatureData(0, 0, 0);
-            _close(fd);
+            close(fd);
             return 0;
         }
         return 1;
     }else
     {
         _npoint = 0;
-        _close(fd);
+        close(fd);
         return 0;
     }
 
@@ -464,23 +466,23 @@ int FeatureData::ReadSIFTB_LOC(const char* szFile)
 int FeatureData::appendSIFTB(const char* szFile, int pos)
 {
     int npoint, nLocDim, nDesDim;
-    int fd = _open(szFile, _O_BINARY|_O_RDONLY,_S_IREAD);
+    int fd = open(szFile, O_RDONLY,S_IREAD);
     if (fd<0) return pos;
     ///
     ///
-    _read(fd, &npoint, sizeof(int)); 
-    _read(fd, &nLocDim, sizeof(int)); 
+    read(fd, &npoint, sizeof(int)); 
+    read(fd, &nLocDim, sizeof(int)); 
     
     if(npoint == SIFT_NAME && IsValidVersionName(nLocDim))
     {
-        _read(fd, &npoint, sizeof(int)); 
-        _read(fd, &nLocDim, sizeof(int)); 
+        read(fd, &npoint, sizeof(int)); 
+        read(fd, &nLocDim, sizeof(int)); 
         //assert(nLocDim == 5);
-        _read(fd, &nDesDim, sizeof(int)); //assert(nDesDim == 128);
-        _read(fd,(float*)_locData->data()+ pos*nLocDim, nLocDim*npoint*sizeof(float));
-        _read(fd,(unsigned char*)_desData->data()+ pos*nDesDim, nDesDim*npoint*sizeof(unsigned char));
+        read(fd, &nDesDim, sizeof(int)); //assert(nDesDim == 128);
+        read(fd,(float*)_locData->data()+ pos*nLocDim, nLocDim*npoint*sizeof(float));
+        read(fd,(unsigned char*)_desData->data()+ pos*nDesDim, nDesDim*npoint*sizeof(unsigned char));
     }
-    _close(fd);
+    close(fd);
 
     return pos + npoint;
 }
@@ -490,19 +492,19 @@ int FeatureData::OpenSeekSIFT(const char *featurefile,int&npoint, int&ndim)
 {
     sift_fileheader_v2 sfh={SIFT_NAME,SIFT_VERSION_4,0,0,0};
 
-    int fd = _open(featurefile, _O_BINARY|_O_RDONLY);
+    int fd = open(featurefile, O_RDONLY);
     if (fd<0) return 0;
     ///
-    _read(fd, &sfh, sizeof(sfh));
+    read(fd, &sfh, sizeof(sfh));
     if(	sfh.szFeature != SIFT_NAME || 	!IsValidVersionName(sfh.szVersion)||
         sfh.npoint <=0 || 		sfh.nLocDim<=0 || 		sfh.nDesDim !=128)
     {
         // incorrect version
-        _close(fd);
+        close(fd);
         return 0;
     }else
     {
-        _lseek(fd, sfh.nLocDim*sfh.npoint*sizeof(float), SEEK_CUR);
+        lseek(fd, sfh.nLocDim*sfh.npoint*sizeof(float), SEEK_CUR);
         npoint = sfh.npoint;
         ndim = sfh.nDesDim;
         return fd;
@@ -517,7 +519,7 @@ void FeatureData::SaveLocationFile(const char* szFeatureFile)
 //	if(_stat(szFeatureFile, &buf)!=-1) return; //already saved
     vector<float > loc(nf*2);
     float * p = &loc[0];
-    int fid = _open(szFeatureFile, _O_CREAT|_O_BINARY|_O_WRONLY|_O_TRUNC,_S_IREAD | _S_IWRITE);
+    int fid = open(szFeatureFile, O_CREAT|O_WRONLY|O_TRUNC,S_IREAD | S_IWRITE);
     if(fid ==-1) return;
 
     for(int i = 0; i < nf ; i++)
@@ -526,18 +528,18 @@ void FeatureData::SaveLocationFile(const char* szFeatureFile)
         *p++ =(float) _locData->getpt(i)[1];
     }
 
-    _write(fid, &loc[0], loc.size()*sizeof(float));
-    _close(fid);
+    write(fid, &loc[0], loc.size()*sizeof(float));
+    close(fid);
 }	
 
 void FeatureData::SaveDescriptorFile(const char* szFeatureFile)
 {
-    int fid = _open(szFeatureFile, _O_CREAT|_O_BINARY|_O_WRONLY|_O_TRUNC,_S_IREAD | _S_IWRITE);
+    int fid = open(szFeatureFile, O_CREAT|O_WRONLY|O_TRUNC,S_IREAD | S_IWRITE);
 
     int nf = _desData->npoint();
     DTYPE * dp = _desData->data();
-    _write(fid, dp, nf*128*sizeof(unsigned char));
-    _close(fid);
+    write(fid, dp, nf*128*sizeof(unsigned char));
+    close(fid);
 }
 
 void FeatureData::ConvertA2B(const char* szFile)
