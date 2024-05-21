@@ -51,7 +51,7 @@ void ImageView::LoadImage(int idx) {
 }
 
 void ImageView::fitViewAllObject() {
-    const QRectF rect = scene.sceneRect();
+    const QRectF rect = image_item->boundingRect();
     const QPointF size = QPointF(rect.width(), rect.height());
     const QRectF rect_large(rect.topLeft() - size * 10, rect.bottomRight() + size * 10);
     scene.setSceneRect(rect_large);
