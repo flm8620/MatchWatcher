@@ -99,9 +99,10 @@ void ImageView::DrawEpipolarLine(double a, double b, double c) { // ax + by + c 
         path.moveTo(intersections[0]);
         path.lineTo(intersections[1]);
         epipolar_line->setPath(path);
-        epipolar_line->setPen(QColor(255, 0, 0));
-        epipolar_line->pen().setCosmetic(true);
-        //epipolar_line->pen().setWidth(10);//int(std::max(0.1, 1.0 / this->transform().m11())));
+        QPen pen(Qt::red);
+        pen.setCosmetic(true);
+        pen.setWidth(1);
+        epipolar_line->setPen(pen);
         this->scene.addItem(epipolar_line);
     }
 }
